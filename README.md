@@ -1,7 +1,6 @@
 # BQuant
 
-BQuant is an LLM Skill that detects and signals on the price-discovery gap between bStocks (tokenized US equities trading 24/7 on BNB Chain) and their reference market  NYSE/Nasdaq which is closed on the weekends.
-**Track 2: Strategy Skills**.
+BQuant is an LLM Skill that detects and signals on the price-discovery gap between bStocks (tokenized US equities trading 24/7 on BNB Chain) and their reference market NYSE/Nasdaq which is closed on the weekends.
 
 Every signal the skill produces is logged on-chain, 
 ---

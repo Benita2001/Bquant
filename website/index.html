@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BQuant — bStock Weekend Drift</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,300;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #EDE6D6;
+      --bg-card: #E5DCC8;
+      --bg-card-hover: #DDD3B8;
+      --ink: #1A1A1A;
+      --ink-mid: #4A4A3A;
+      --ink-light: #7A7A6A;
+      --bar-bg: #18181A;
+      --bar-text: #C8C4B8;
+      --accent: #9B8B5A;
+      --accent-light: #B8A870;
+      --accent-dim: rgba(155, 139, 90, 0.15);
+      --signal-converged: #4A7A5A;
+      --signal-flat: #7A7A5A;
+      --signal-long: #2A5A8A;
+      --signal-short: #8A2A2A;
+      --border: rgba(26, 26, 26, 0.12);
+      --font-serif: 'Source Serif 4', Georgia, serif;
+      --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+      --max-w: 1120px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-serif);
+      font-size: 17px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+    }
+    .nav-inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      height: 52px;
+      gap: 0;
+    }
+    .nav-logo {
+      font-family: var(--font-mono);
+      font-weight: 500;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink);
+      text-decoration: none;
+      margin-right: auto;
+    }
+    .nav-links {
+      display: flex;
+      list-style: none;
+      gap: 0;
+    }
+    .nav-links a {
+      display: block;
+      padding: 0 1rem;
+      height: 52px;
+      line-height: 52px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-links a.external::after {
+      content: ' ↗';
+      font-size: 0.65rem;
+      opacity: 0.5;
+    }
+
+    /* ── STAT BAR ── */
+    .stat-bar {
+      background: var(--bar-bg);
+      padding: 0 2rem;
+    }
+    .stat-bar-inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      height: 36px;
+      gap: 2.5rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .stat-bar-inner::-webkit-scrollbar { display: none; }
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .stat-label {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6A6A5A;
+    }
+    .stat-value {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--bar-text);
+    }
+    .stat-value.live { color: #8BC47A; }
+    .stat-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: #3A3A2A;
+      flex-shrink: 0;
+    }
+
+    /* ── SECTIONS ── */
+    section {
+      padding: 80px 2rem;
+    }
+    .section-inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+    }
+
+    /* ── HERO ── */
+    #hero {
+      padding: 100px 2rem 80px;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.25rem;
+    }
+    .hero-headline {
+      font-family: var(--font-serif);
+      font-size: clamp(2.2rem, 4.5vw, 3.6rem);
+      font-weight: 600;
+      line-height: 1.18;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      max-width: 820px;
+      margin-bottom: 1.5rem;
+    }
+    .hero-headline em {
+      font-style: italic;
+      color: var(--accent);
+    }
+    .hero-body {
+      font-size: 1.1rem;
+      color: var(--ink-mid);
+      max-width: 620px;
+      line-height: 1.7;
+      margin-bottom: 2rem;
+    }
+    .hero-meta {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+    .hero-meta-item {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+    }
+    .hero-meta-item span {
+      color: var(--ink-mid);
+      font-weight: 500;
+    }
+
+    /* ── LIVE DATA ── */
+    #live-data { border-bottom: 1px solid var(--border); }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+    .section-title {
+      font-family: var(--font-serif);
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 600;
+      line-height: 1.2;
+      margin-bottom: 0.75rem;
+      color: var(--ink);
+    }
+    .section-sub {
+      font-size: 1rem;
+      color: var(--ink-mid);
+      max-width: 580px;
+      margin-bottom: 2.5rem;
+    }
+
+    /* Drift cards */
+    .drift-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 1px;
+      border: 1px solid var(--border);
+      background: var(--border);
+      margin-bottom: 3rem;
+    }
+    .drift-card {
+      background: var(--bg);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .drift-token {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      font-weight: 500;
+      color: var(--ink-light);
+      text-transform: uppercase;
+    }
+    .drift-pct {
+      font-family: var(--font-mono);
+      font-size: 1.65rem;
+      font-weight: 500;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+    .drift-pct.pos { color: #3A6A3A; }
+    .drift-pct.neg { color: #6A2A2A; }
+    .drift-pct.flat { color: var(--ink); }
+    .drift-signal {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 2px;
+      display: inline-block;
+      width: fit-content;
+      margin-top: 0.1rem;
+    }
+    .signal-converged { background: rgba(74, 122, 90, 0.15); color: var(--signal-converged); }
+    .signal-flat { background: rgba(122, 122, 90, 0.12); color: var(--signal-flat); }
+    .signal-long { background: rgba(42, 90, 138, 0.12); color: var(--signal-long); }
+    .signal-short { background: rgba(138, 42, 42, 0.12); color: var(--signal-short); }
+    .drift-anchor {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      color: var(--ink-light);
+      margin-top: 0.25rem;
+    }
+    .drift-current {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--ink-mid);
+      font-weight: 500;
+    }
+
+    /* Chart */
+    .chart-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    .chart-title {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      margin-bottom: 1rem;
+    }
+    .chart-container {
+      position: relative;
+      height: 280px;
+    }
+
+    /* On-chain signals table */
+    .table-title {
+      font-family: var(--font-serif);
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .table-sub {
+      font-size: 0.9rem;
+      color: var(--ink-mid);
+      margin-bottom: 1.25rem;
+    }
+    .signal-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
+    thead tr {
+      background: var(--bar-bg);
+    }
+    thead th {
+      padding: 0.65rem 1.1rem;
+      text-align: left;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #8A8A7A;
+      font-size: 0.62rem;
+      white-space: nowrap;
+    }
+    tbody tr {
+      border-top: 1px solid var(--border);
+    }
+    tbody tr:hover { background: var(--bg-card); }
+    tbody td {
+      padding: 0.75rem 1.1rem;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .td-token { font-weight: 500; color: var(--accent); }
+    .td-bps { color: var(--ink-mid); }
+    .td-conf { color: var(--ink-mid); }
+    .tx-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.67rem;
+      letter-spacing: 0.04em;
+    }
+    .tx-link:hover { text-decoration: underline; }
+
+    .data-note {
+      background: var(--accent-dim);
+      border-left: 3px solid var(--accent);
+      padding: 0.85rem 1.1rem;
+      font-size: 0.85rem;
+      color: var(--ink-mid);
+      font-family: var(--font-serif);
+      line-height: 1.5;
+    }
+    .data-note strong { color: var(--ink); }
+
+    /* ── HOW IT WORKS ── */
+    #how-it-works { border-bottom: 1px solid var(--border); }
+
+    .formula-block {
+      background: var(--bar-bg);
+      padding: 1.25rem 1.5rem;
+      border-radius: 1px;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      color: #C8C4B8;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+      overflow-x: auto;
+    }
+    .formula-block .comment { color: #5A5A4A; }
+
+    .threshold-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      margin-bottom: 2rem;
+    }
+    .threshold-table-wrap table thead tr { background: var(--bg-card); }
+    .threshold-table-wrap table thead th { color: var(--ink-mid); }
+    .threshold-table-wrap table tbody td { font-size: 0.82rem; color: var(--ink); }
+
+    .output-block {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 1.25rem 1.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      line-height: 1.9;
+      color: var(--ink);
+    }
+    .output-block-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.65rem;
+      font-weight: 500;
+    }
+    .output-line-key { color: var(--accent); }
+    .output-line-val { color: var(--ink-mid); }
+
+    .hiw-prose {
+      font-size: 0.975rem;
+      color: var(--ink-mid);
+      line-height: 1.75;
+      max-width: 680px;
+      margin-bottom: 1.5rem;
+    }
+    .hiw-prose strong { color: var(--ink); }
+
+    /* ── SDK ── */
+    #sdk { border-bottom: 1px solid var(--border); }
+
+    .sdk-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    @media (max-width: 720px) { .sdk-grid { grid-template-columns: 1fr; } }
+
+    .sdk-fn-card {
+      border: 1px solid var(--border);
+      padding: 1.25rem 1.5rem;
+    }
+    .sdk-fn-name {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--ink);
+      margin-bottom: 0.35rem;
+    }
+    .sdk-fn-sig {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+    .sdk-fn-desc {
+      font-size: 0.88rem;
+      color: var(--ink-mid);
+      line-height: 1.55;
+    }
+    .sdk-fn-returns {
+      margin-top: 0.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--ink-light);
+    }
+
+    .code-block {
+      background: var(--bar-bg);
+      padding: 1.25rem 1.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.77rem;
+      line-height: 1.7;
+      color: #C8C4B8;
+      overflow-x: auto;
+    }
+    .code-block .kw { color: #9B8BDA; }
+    .code-block .fn { color: #8BC4DA; }
+    .code-block .str { color: #8BC4A0; }
+    .code-block .num { color: #DAB87A; }
+    .code-block .cmt { color: #4A4A3A; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--bar-bg);
+      padding: 2rem;
+      border-top: 1px solid #2A2A2A;
+    }
+    .footer-inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+    }
+    .footer-agent {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      color: #8A8A7A;
+      margin-bottom: 0.5rem;
+    }
+    .footer-agent a {
+      color: var(--accent-light);
+      text-decoration: none;
+    }
+    .footer-agent a:hover { text-decoration: underline; }
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .footer-links a {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      color: #5A5A4A;
+      text-decoration: none;
+    }
+    .footer-links a:hover { color: #8A8A7A; }
+
+    /* ── MISC ── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 2rem 0;
+    }
+
+    @media (max-width: 640px) {
+      nav { padding: 0 1rem; }
+      section { padding: 56px 1rem; }
+      #hero { padding: 64px 1rem 56px; }
+      .hero-meta { gap: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── NAV ─── -->
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="#hero">BQuant</a>
+    <ul class="nav-links">
+      <li><a href="#hero">Hero</a></li>
+      <li><a href="#live-data">Live data</a></li>
+      <li><a href="#how-it-works">How it works</a></li>
+      <li><a href="#sdk">SDK</a></li>
+      <li><a href="https://github.com/Benita2001/Bquant" target="_blank" rel="noopener" class="external">GitHub</a></li>
+      <li><a href="docs.html">Doc</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ─── STAT BAR ─── -->
+<div class="stat-bar">
+  <div class="stat-bar-inner">
+    <div class="stat-item">
+      <span class="stat-label">Snapshots logged</span>
+      <span class="stat-value live">3</span>
+    </div>
+    <div class="stat-dot"></div>
+    <div class="stat-item">
+      <span class="stat-label">Last snapshot</span>
+      <span class="stat-value" id="last-snap-ago">—</span>
+    </div>
+    <div class="stat-dot"></div>
+    <div class="stat-item">
+      <span class="stat-label">On-chain signals</span>
+      <span class="stat-value live">5</span>
+    </div>
+    <div class="stat-dot"></div>
+    <div class="stat-item">
+      <span class="stat-label">Contract</span>
+      <span class="stat-value">0xFFCC…F453</span>
+    </div>
+    <div class="stat-dot"></div>
+    <div class="stat-item">
+      <span class="stat-label">Agent</span>
+      <span class="stat-value live">registered</span>
+    </div>
+    <div class="stat-dot"></div>
+    <div class="stat-item">
+      <span class="stat-label">ERC-8004 ID</span>
+      <span class="stat-value">1470</span>
+    </div>
+    <div class="stat-dot"></div>
+    <div class="stat-item">
+      <span class="stat-label">Network</span>
+      <span class="stat-value">BSC Testnet</span>
+    </div>
+  </div>
+</div>
+
+<!-- ─── HERO ─── -->
+<section id="hero">
+  <div class="section-inner">
+    <p class="hero-eyebrow">BNB Hack Q2 2026 · Track 2 — Strategy Skills</p>
+    <h1 class="hero-headline">
+      When markets close,<br>
+      <em>bStocks keep drifting.</em><br>
+      BQuant measures the gap.
+    </h1>
+    <p class="hero-body">
+      NYSE and Nasdaq halt every weekend. The bStock tokens that mirror them on BNB Chain
+      do not. Over those closed hours, on-chain price and reference price diverge — and
+      when markets reopen Monday, gravity pulls them back. BQuant tracks that drift in
+      real time and emits a mean-reversion signal the moment the gap is wide enough to act on.
+    </p>
+    <div class="hero-meta">
+      <div class="hero-meta-item">Tokens &nbsp;<span>NVDAB · TSLAB · CRCLB · MUB · SNDKB</span></div>
+      <div class="hero-meta-item">Chain &nbsp;<span>BNB Chain (BEP-20)</span></div>
+      <div class="hero-meta-item">Data source &nbsp;<span>CMC Skill Hub MCP</span></div>
+      <div class="hero-meta-item">Signal engine &nbsp;<span>drift_engine.py</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── LIVE DATA ─── -->
+<section id="live-data">
+  <div class="section-inner">
+    <p class="section-label">Live data</p>
+    <h2 class="section-title">Current drift readings</h2>
+    <p class="section-sub">
+      Computed from 3 real CMC snapshots captured June 20–21, 2026.
+      Anchor = first snapshot. All values update when cron adds a new snapshot.
+    </p>
+
+    <!-- Drift cards -->
+    <div class="drift-grid">
+
+      <div class="drift-card">
+        <span class="drift-token">NVDAB · NVIDIA</span>
+        <span class="drift-pct neg">−0.0353%</span>
+        <span class="drift-signal signal-converged">Converged</span>
+        <span class="drift-current">$209.4860</span>
+        <span class="drift-anchor">anchor $209.56 · conf 90</span>
+      </div>
+
+      <div class="drift-card">
+        <span class="drift-token">TSLAB · Tesla</span>
+        <span class="drift-pct pos">+0.0805%</span>
+        <span class="drift-signal signal-converged">Converged</span>
+        <span class="drift-current">$400.8524</span>
+        <span class="drift-anchor">anchor $400.53 · conf 90</span>
+      </div>
+
+      <div class="drift-card">
+        <span class="drift-token">CRCLB · Circle</span>
+        <span class="drift-pct pos">+0.0514%</span>
+        <span class="drift-signal signal-converged">Converged</span>
+        <span class="drift-current">$80.6615</span>
+        <span class="drift-anchor">anchor $80.62 · conf 90</span>
+      </div>
+
+      <div class="drift-card">
+        <span class="drift-token">MUB · Micron</span>
+        <span class="drift-pct pos">+0.2552%</span>
+        <span class="drift-signal signal-converged">Converged</span>
+        <span class="drift-current">$1,134.8839</span>
+        <span class="drift-anchor">anchor $1,131.995 · conf 90</span>
+      </div>
+
+      <div class="drift-card">
+        <span class="drift-token">SNDKB · SanDisk</span>
+        <span class="drift-pct pos">+0.1168%</span>
+        <span class="drift-signal signal-converged">Converged</span>
+        <span class="drift-current">$2,243.2475</span>
+        <span class="drift-anchor">anchor $2,240.63 · conf 90</span>
+      </div>
+
+    </div>
+
+    <!-- Chart -->
+    <div class="chart-wrap">
+      <p class="chart-title">Drift % from anchor · all 5 tokens · 3 snapshots (22:46 → 23:15 UTC, June 20 2026)</p>
+      <div class="chart-container">
+        <canvas id="driftChart"></canvas>
+      </div>
+    </div>
+
+    <!-- On-chain signals table -->
+    <h3 class="table-title">On-chain signal log — BSC Testnet</h3>
+    <p class="table-sub">
+      5 signals logged to <code style="font-family:var(--font-mono);font-size:0.8em">BQuantSignalRegistry</code>
+      at <code style="font-family:var(--font-mono);font-size:0.8em">0xFFCC472c47cf0a8168545a8318832950f7C6F453</code>.
+      On-chain enum: FLAT=0, LONG=1, SHORT=2. CONVERGED maps to FLAT for gas efficiency.
+    </p>
+    <div class="signal-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>logId</th>
+            <th>Token</th>
+            <th>Signal (on-chain)</th>
+            <th>Drift (bps)</th>
+            <th>Confidence</th>
+            <th>Transaction</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>0</td>
+            <td class="td-token">NVDAB</td>
+            <td><span class="drift-signal signal-converged">FLAT / CONVERGED</span></td>
+            <td class="td-bps">−4 bps</td>
+            <td class="td-conf">90</td>
+            <td><a class="tx-link" href="https://testnet.bscscan.com/tx/0x59560eb4162e2cb909d5e27f063786e43757da3cba4b84ffef5fcdd146199e0a" target="_blank" rel="noopener">0x5956…e0a ↗</a></td>
+          </tr>
+          <tr>
+            <td>1</td>
+            <td class="td-token">TSLAB</td>
+            <td><span class="drift-signal signal-converged">FLAT / CONVERGED</span></td>
+            <td class="td-bps">+8 bps</td>
+            <td class="td-conf">90</td>
+            <td><a class="tx-link" href="https://testnet.bscscan.com/tx/0x14a2441bdbc4a651ff0a2d28d40dc8947c0fa93067775cc2bcffbbf630f10f7f" target="_blank" rel="noopener">0x14a2…f7f ↗</a></td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td class="td-token">CRCLB</td>
+            <td><span class="drift-signal signal-converged">FLAT / CONVERGED</span></td>
+            <td class="td-bps">+5 bps</td>
+            <td class="td-conf">90</td>
+            <td><a class="tx-link" href="https://testnet.bscscan.com/tx/0x784fdd5c8c821416419aae3250d21e82da134193d926e4d2ae3cc824770b1dda" target="_blank" rel="noopener">0x784f…dda ↗</a></td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td class="td-token">MUB</td>
+            <td><span class="drift-signal signal-converged">FLAT / CONVERGED</span></td>
+            <td class="td-bps">+26 bps</td>
+            <td class="td-conf">90</td>
+            <td><a class="tx-link" href="https://testnet.bscscan.com/tx/0x491fb03ee3f42c3c55cb5bd3da156abd23b3024958c3094bfc3ca488ecbf92df" target="_blank" rel="noopener">0x491f…2df ↗</a></td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td class="td-token">SNDKB</td>
+            <td><span class="drift-signal signal-converged">FLAT / CONVERGED</span></td>
+            <td class="td-bps">+12 bps</td>
+            <td class="td-conf">90</td>
+            <td><a class="tx-link" href="https://testnet.bscscan.com/tx/0xf9b8830116ef27b3ef7046dcd48817fcf3a387540675fce63750780f33bd3038" target="_blank" rel="noopener">0xf9b8…038 ↗</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="data-note">
+      <strong>Live data, captured during a 14-hour build window (June 20–21, 2026) — not backfilled or simulated.</strong>
+      Anchor set at first CMC Skill Hub snapshot (22:46 UTC June 20). All drift values, signals,
+      and confidence scores are computed by drift_engine.py against real CMC prices. No placeholder
+      or synthetic data appears anywhere in this project.
+    </div>
+  </div>
+</section>
+
+<!-- ─── HOW IT WORKS ─── -->
+<section id="how-it-works">
+  <div class="section-inner">
+    <p class="section-label">How it works</p>
+    <h2 class="section-title">Drift formula &amp; signal logic</h2>
+
+    <p class="hiw-prose">
+      BQuant's core idea: a bStock's on-chain price can drift from its NYSE/Nasdaq reference
+      anchor while the underlying exchange is closed. When the drift exceeds a threshold,
+      mean-reversion back to the reference anchor is the expected outcome at market open.
+      <strong>Direction is contrarian</strong> — price drifted up means SHORT (it will fall back);
+      price drifted down means LONG (it will rise back).
+    </p>
+
+    <!-- Drift formula -->
+    <div class="formula-block">
+      <span class="comment"># Drift formula — drift_engine.py</span><br>
+      drift_t = (price_t − price_t0) / price_t0<br>
+      <br>
+      <span class="comment"># Where:</span><br>
+      <span class="comment">#   price_t0  = anchor price (first snapshot in data/weekend_snapshots.json)</span><br>
+      <span class="comment">#   price_t   = most recent CMC snapshot price</span><br>
+      <span class="comment">#   drift_t   = signed fraction; positive = price rose above anchor</span>
+    </div>
+
+    <p class="hiw-prose">
+      The signal thresholds below are hard-coded in <strong>drift_engine.py</strong> and govern
+      all five tokens uniformly. Confidence is an ordinal 0–100 band,
+      not a statistical p-value.
+    </p>
+
+    <!-- Threshold table -->
+    <div class="threshold-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Condition</th>
+            <th>Signal</th>
+            <th>Direction</th>
+            <th>Confidence</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-family:var(--font-mono);font-size:0.8em">|drift| &gt; 1.5%</td>
+            <td><span class="drift-signal signal-long">LONG</span> / <span class="drift-signal signal-short">SHORT</span></td>
+            <td>Opposite to drift sign (reversion bet)</td>
+            <td>60 at threshold → 85 at 4.5%</td>
+          </tr>
+          <tr>
+            <td style="font-family:var(--font-mono);font-size:0.8em">|drift| &lt; 0.3%</td>
+            <td><span class="drift-signal signal-converged">CONVERGED</span></td>
+            <td>Price returned to anchor — exit or skip</td>
+            <td>Fixed 90</td>
+          </tr>
+          <tr>
+            <td style="font-family:var(--font-mono);font-size:0.8em">0.3% ≤ |drift| ≤ 1.5%</td>
+            <td><span class="drift-signal signal-flat">FLAT</span></td>
+            <td>Insufficient edge; no position</td>
+            <td>Fixed 50</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Output format block -->
+    <div class="output-block">
+      <p class="output-block-label">Mandatory signal output format</p>
+      <span class="output-line-key">[Strategy:</span> <span class="output-line-val">BQuant — bStock Weekend Drift]</span><br>
+      <span class="output-line-key">[Token:</span> <span class="output-line-val">&lt;TICKER&gt;]</span><br>
+      <span class="output-line-key">[Anchor (t0):</span> <span class="output-line-val">&lt;price&gt; @ &lt;timestamp&gt;]</span><br>
+      <span class="output-line-key">[Current Price:</span> <span class="output-line-val">&lt;price&gt; @ &lt;timestamp&gt;]</span><br>
+      <span class="output-line-key">[Drift:</span> <span class="output-line-val">x.xx%]</span><br>
+      <span class="output-line-key">[Signal:</span> <span class="output-line-val">LONG / SHORT / FLAT / CONVERGED]</span><br>
+      <span class="output-line-key">[Confidence:</span> <span class="output-line-val">xx%]</span><br>
+      <span class="output-line-key">[Reasoning:</span> <span class="output-line-val">&lt;one sentence&gt;]</span>
+    </div>
+
+    <p class="hiw-prose" style="margin-top:1.5rem">
+      Every signal emitted by the system — to terminal, dashboard, or on-chain call — must
+      include this block verbatim. The <strong>logId</strong> emitted by
+      <code style="font-family:var(--font-mono);font-size:0.85em">BQuantSignalRegistry.logSignal()</code>
+      on BSC testnet links the on-chain event to this off-chain reasoning block.
+    </p>
+  </div>
+</section>
+
+<!-- ─── SDK ─── -->
+<section id="sdk">
+  <div class="section-inner">
+    <p class="section-label">SDK</p>
+    <h2 class="section-title">Pluggable signal engine</h2>
+    <p class="section-sub">
+      <code style="font-family:var(--font-mono);font-size:0.85em">drift_engine.py</code> is a
+      pure-function module with no I/O and no side effects — importable into any agent or
+      orchestration layer. Two functions, JSON-serializable in/out, no exceptions on bad data.
+    </p>
+
+    <div class="sdk-grid">
+      <div class="sdk-fn-card">
+        <div class="sdk-fn-name">calculate_drift()</div>
+        <div class="sdk-fn-sig">calculate_drift(snapshots: list, token: str) → dict</div>
+        <div class="sdk-fn-desc">
+          Computes signed fractional drift between the anchor snapshot (index 0) and the
+          most recent snapshot for a given token. Returns anchor price, current price,
+          drift_pct, snapshot_count, and an ok/error field for missing tokens.
+        </div>
+        <div class="sdk-fn-returns">
+          Returns: anchor_price · current_price · drift_pct · snapshot_count · ok · error
+        </div>
+      </div>
+      <div class="sdk-fn-card">
+        <div class="sdk-fn-name">generate_signal()</div>
+        <div class="sdk-fn-sig">generate_signal(drift_pct: float) → dict</div>
+        <div class="sdk-fn-desc">
+          Maps a drift fraction to LONG / SHORT / FLAT / CONVERGED with a confidence
+          integer (0–100) and a one-sentence reasoning string. Pure function —
+          stateless, no I/O.
+        </div>
+        <div class="sdk-fn-returns">
+          Returns: signal · confidence · reasoning
+        </div>
+      </div>
+    </div>
+
+    <!-- Example usage -->
+    <div class="code-block">
+<span class="kw">import</span> json, importlib.util<br>
+<br>
+<span class="cmt"># Load engine (works from any calling context)</span><br>
+<span class="fn">spec</span> = importlib.util.<span class="fn">spec_from_file_location</span>(<span class="str">"drift_engine"</span>, <span class="str">"skills/bquant-weekend-drift/scripts/drift_engine.py"</span>)<br>
+<span class="fn">engine</span> = importlib.util.<span class="fn">module_from_spec</span>(spec); spec.loader.<span class="fn">exec_module</span>(engine)<br>
+<br>
+<span class="kw">with</span> <span class="fn">open</span>(<span class="str">"data/weekend_snapshots.json"</span>) <span class="kw">as</span> f:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;snapshots = json.<span class="fn">load</span>(f)<br>
+<br>
+drift = engine.<span class="fn">calculate_drift</span>(snapshots, <span class="str">"NVDAB"</span>)<br>
+<span class="cmt"># → {"token": "NVDAB", "anchor_price": 209.56, "drift_pct": -0.000353, "ok": True, ...}</span><br>
+<br>
+signal = engine.<span class="fn">generate_signal</span>(drift[<span class="str">"drift_pct"</span>])<br>
+<span class="cmt"># → {"signal": "CONVERGED", "confidence": 90, "reasoning": "..."}</span>
+    </div>
+
+    <p class="hiw-prose" style="margin-top:1.5rem">
+      The engine is registered as skill <strong>bquant-weekend-drift</strong> in the CMC
+      Skill Hub MCP context. Agents invoke it via the MCP tool interface; scripts can import
+      it directly. Token list is the single source of truth in
+      <code style="font-family:var(--font-mono);font-size:0.85em">tokens.py</code>.
+    </p>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <div class="footer-inner">
+    <p class="footer-agent">
+      bquant-weekend-drift &nbsp;·&nbsp; ERC-8004 agentId 1470 &nbsp;·&nbsp;
+      <a href="https://testnet.bscscan.com/tx/0x7d2485eaaef6d3e11426b384a608802b63d1dd18e08f7978c3d860dd2cb7c16f" target="_blank" rel="noopener">
+        Registration tx 0x7d24…c16f ↗
+      </a>
+    </p>
+    <div class="footer-links">
+      <a href="https://github.com/Benita2001/Bquant" target="_blank" rel="noopener">GitHub ↗</a>
+      <a href="docs.html">Strategy spec →</a>
+      <a href="https://testnet.bscscan.com/address/0xFFCC472c47cf0a8168545a8318832950f7C6F453" target="_blank" rel="noopener">Contract ↗</a>
+      <a href="#hero">Back to top ↑</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ── Stat bar: last snapshot "X min ago" ──
+  (function () {
+    const lastTs = new Date("2026-06-20T23:15:45.969362+00:00");
+    function updateAgo() {
+      const diffMs = Date.now() - lastTs.getTime();
+      const diffMin = Math.floor(diffMs / 60000);
+      const diffH   = Math.floor(diffMin / 60);
+      const el = document.getElementById("last-snap-ago");
+      if (!el) return;
+      if (diffMin < 1)        el.textContent = "just now";
+      else if (diffMin < 60)  el.textContent = diffMin + "m ago";
+      else if (diffH < 24)    el.textContent = diffH + "h " + (diffMin % 60) + "m ago";
+      else                    el.textContent = Math.floor(diffH/24) + "d ago";
+    }
+    updateAgo();
+    setInterval(updateAgo, 30000);
+  })();
+
+  // ── Drift chart ──
+  (function () {
+    const labels = ["22:46 UTC", "23:13 UTC", "23:15 UTC"];
+
+    const tokens = [
+      { label: "NVDAB",  data: [0.0, -0.035, -0.0353], color: "#5A82C4" },
+      { label: "TSLAB",  data: [0.0,  0.0723, 0.0805], color: "#C47A5A" },
+      { label: "CRCLB",  data: [0.0,  0.0633, 0.0514], color: "#5AC47A" },
+      { label: "MUB",    data: [0.0,  0.2365, 0.2552], color: "#9B8B5A" },
+      { label: "SNDKB",  data: [0.0,  0.1048, 0.1168], color: "#9A5AC4" },
+    ];
+
+    const ctx = document.getElementById("driftChart").getContext("2d");
+
+    new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: tokens.map(t => ({
+          label: t.label,
+          data: t.data,
+          borderColor: t.color,
+          backgroundColor: t.color + "18",
+          borderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          tension: 0.2,
+          fill: false,
+        }))
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: {
+            position: "top",
+            labels: {
+              font: { family: "'JetBrains Mono', monospace", size: 11 },
+              color: "#4A4A3A",
+              padding: 16,
+              usePointStyle: true,
+              pointStyleWidth: 8,
+            }
+          },
+          tooltip: {
+            backgroundColor: "#18181A",
+            titleColor: "#8A8A7A",
+            bodyColor: "#C8C4B8",
+            titleFont: { family: "'JetBrains Mono', monospace", size: 11 },
+            bodyFont: { family: "'JetBrains Mono', monospace", size: 11 },
+            callbacks: {
+              label: ctx => " " + ctx.dataset.label + ": " + ctx.parsed.y.toFixed(4) + "%",
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: "rgba(26,26,26,0.08)" },
+            ticks: {
+              font: { family: "'JetBrains Mono', monospace", size: 10 },
+              color: "#7A7A6A",
+            },
+          },
+          y: {
+            grid: { color: "rgba(26,26,26,0.08)" },
+            ticks: {
+              font: { family: "'JetBrains Mono', monospace", size: 10 },
+              color: "#7A7A6A",
+              callback: v => v.toFixed(2) + "%",
+            },
+            title: {
+              display: true,
+              text: "Drift % from anchor",
+              font: { family: "'JetBrains Mono', monospace", size: 10 },
+              color: "#7A7A6A",
+            }
+          }
+        }
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>

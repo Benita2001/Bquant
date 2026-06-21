@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# Environment / secrets — NEVER commit
+.env
+*.env
+*.key
+*.pem
+
+# Vercel
+.vercel/
+website/.vercel/
+
+# Foundry build artefacts (already in registry/.gitignore but belt-and-braces)
+registry/out/
+registry/cache/
+
+# macOS
+.DS_Store

@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BQuant Strategy Specification</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,300;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #EDE6D6;
+      --bg-card: #E5DCC8;
+      --ink: #1A1A1A;
+      --ink-mid: #4A4A3A;
+      --ink-light: #7A7A6A;
+      --bar-bg: #18181A;
+      --bar-text: #C8C4B8;
+      --accent: #9B8B5A;
+      --accent-light: #B8A870;
+      --border: rgba(26, 26, 26, 0.12);
+      --font-serif: 'Source Serif 4', Georgia, serif;
+      --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+      --max-w: 760px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-serif);
+      font-size: 17px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── HEADER ── */
+    .doc-header {
+      background: var(--bar-bg);
+      padding: 0 2rem;
+    }
+    .doc-header-inner {
+      max-width: calc(var(--max-w) + 4rem);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 48px;
+    }
+    .back-link {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #6A6A5A;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .back-link:hover { color: var(--accent-light); }
+    .doc-header-title {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #4A4A3A;
+    }
+
+    /* ── DOC BODY ── */
+    .doc-outer {
+      padding: 3.5rem 2rem 5rem;
+    }
+    .doc-inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+    }
+
+    /* ── TOP META ── */
+    .doc-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+    .doc-title {
+      font-family: var(--font-serif);
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-weight: 600;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      margin-bottom: 1.25rem;
+    }
+    .doc-meta-row {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 0.85rem 0;
+      margin-bottom: 3rem;
+    }
+    .doc-meta-item {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .doc-meta-key { color: var(--ink-light); }
+    .doc-meta-val { color: var(--ink-mid); font-weight: 500; }
+
+    /* ── SECTION HEADERS ── */
+    .doc-h2 {
+      font-family: var(--font-serif);
+      font-size: 1.45rem;
+      font-weight: 600;
+      line-height: 1.25;
+      margin: 3rem 0 1rem;
+      padding-top: 2.5rem;
+      border-top: 1px solid var(--border);
+      color: var(--ink);
+    }
+    .doc-h2:first-of-type {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+    .section-num {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    /* ── PROSE ── */
+    .doc-p {
+      margin-bottom: 1rem;
+      color: var(--ink-mid);
+      font-size: 0.975rem;
+    }
+    .doc-p strong { color: var(--ink); font-weight: 600; }
+    .doc-p em { font-style: italic; }
+
+    /* ── CODE ── */
+    .doc-pre {
+      background: var(--bar-bg);
+      padding: 1.1rem 1.4rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.65;
+      color: #C8C4B8;
+      overflow-x: auto;
+      margin: 1rem 0 1.25rem;
+    }
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.85em;
+      background: rgba(26,26,26,0.06);
+      padding: 0.1em 0.3em;
+      border-radius: 2px;
+    }
+
+    /* ── TABLES ── */
+    .doc-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      margin: 1rem 0 1.5rem;
+    }
+    .doc-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    .doc-table thead tr { background: var(--bar-bg); }
+    .doc-table thead th {
+      padding: 0.6rem 1rem;
+      text-align: left;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #8A8A7A;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .doc-table tbody td {
+      padding: 0.65rem 1rem;
+      border-top: 1px solid var(--border);
+      color: var(--ink-mid);
+      vertical-align: top;
+    }
+    .doc-table tbody td:first-child {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    /* ── FORMULA CALLOUT ── */
+    .formula-callout {
+      background: var(--bg-card);
+      border-left: 3px solid var(--accent);
+      padding: 1rem 1.25rem;
+      margin: 1rem 0 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.88rem;
+      color: var(--ink);
+      line-height: 1.7;
+    }
+
+    /* ── LIMITATION CALLOUT ── */
+    .limit-note {
+      background: rgba(155,139,90,0.1);
+      border: 1px solid rgba(155,139,90,0.25);
+      padding: 0.9rem 1.1rem;
+      font-size: 0.875rem;
+      color: var(--ink-mid);
+      margin: 1.5rem 0;
+      line-height: 1.6;
+    }
+    .limit-note strong { color: var(--ink); }
+
+    /* ── FOOTER ── */
+    .doc-footer {
+      background: var(--bar-bg);
+      padding: 1.5rem 2rem;
+      margin-top: 4rem;
+    }
+    .doc-footer-inner {
+      max-width: calc(var(--max-w) + 4rem);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .doc-footer a {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      color: #5A5A4A;
+      text-decoration: none;
+    }
+    .doc-footer a:hover { color: var(--accent-light); }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<div class="doc-header">
+  <div class="doc-header-inner">
+    <a class="back-link" href="index.html">← BQuant</a>
+    <span class="doc-header-title">Strategy Specification</span>
+  </div>
+</div>
+
+<!-- ── DOCUMENT ── -->
+<div class="doc-outer">
+  <div class="doc-inner">
+
+    <p class="doc-eyebrow">BNB Hack Q2 2026 · Track 2 — Strategy Skills</p>
+    <h1 class="doc-title">BQuant Weekend Drift<br>Strategy Specification</h1>
+    <div class="doc-meta-row">
+      <div class="doc-meta-item"><span class="doc-meta-key">Version </span><span class="doc-meta-val">1.0</span></div>
+      <div class="doc-meta-item"><span class="doc-meta-key">Status </span><span class="doc-meta-val">Active</span></div>
+      <div class="doc-meta-item"><span class="doc-meta-key">Readable by </span><span class="doc-meta-val">Judges, auditors, agents</span></div>
+      <div class="doc-meta-item"><span class="doc-meta-key">Network </span><span class="doc-meta-val">BSC Testnet</span></div>
+    </div>
+
+    <!-- §1 Thesis -->
+    <h2 class="doc-h2"><span class="section-num">§1</span>Thesis</h2>
+    <p class="doc-p">
+      Tokenised equities (bStocks) on BNB Chain trade continuously, 24/7. Their underlying
+      references — NYSE and Nasdaq-listed stocks — only trade during exchange hours
+      (~9:30 am–4 pm ET, Monday–Friday). Over a weekend, the on-chain price of a bStock
+      can drift away from the last known reference price.
+    </p>
+    <p class="doc-p">
+      <strong>Hypothesis:</strong> This drift is transient. When NYSE/Nasdaq re-opens on Monday,
+      the on-chain price mean-reverts to the reference anchor. A sufficiently large drift during
+      market closure is therefore a statistically motivated mean-reversion signal.
+    </p>
+    <p class="doc-p">
+      This strategy does not predict direction in the conventional sense — it bets on
+      <em>gravitational pull back</em> toward a known fundamental reference point (the reference
+      stock's closing price).
+    </p>
+
+    <!-- §2 Tokens -->
+    <h2 class="doc-h2"><span class="section-num">§2</span>Tokens</h2>
+    <div class="doc-table-wrap">
+      <table class="doc-table">
+        <thead><tr><th>Symbol</th><th>Underlying Reference</th></tr></thead>
+        <tbody>
+          <tr><td>NVDAB</td><td>NVIDIA Corp (NVDA)</td></tr>
+          <tr><td>TSLAB</td><td>Tesla Inc (TSLA)</td></tr>
+          <tr><td>CRCLB</td><td>Circle Internet Group (CRCL)</td></tr>
+          <tr><td>MUB</td><td>Micron Technology (MU)</td></tr>
+          <tr><td>SNDKB</td><td>SanDisk Corp (SNDK)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="doc-p">
+      Token contracts are on BNB Chain (BEP-20). Prices are sourced from CMC Skill Hub
+      (MCP tool) for agent-context invocations, and from the CMC REST API
+      (<code>/v1/cryptocurrency/quotes/latest</code>) for VPS cron automation.
+      SPCXB (SpaceX) is excluded pending completion of the Nasdaq IPO and a live
+      Binance listing date.
+    </p>
+
+    <!-- §3 Data Method -->
+    <h2 class="doc-h2"><span class="section-num">§3</span>Data Method — Path B (Self-Generated History)</h2>
+    <p class="doc-p">
+      Historical OHLCV for bStock tokens is <strong>not available</strong> on the current CMC
+      plan (REST historical endpoint returns 403; Skill Hub has no time-anchored price query).
+      Therefore:
+    </p>
+    <p class="doc-p">
+      The agent snapshots current prices via CMC Skill Hub on a recurring basis (every 30–60
+      minutes, cron-driven on Contabo VPS). Each snapshot is appended to
+      <code>data/weekend_snapshots.json</code>:
+    </p>
+    <div class="doc-pre">{
+  "timestamp": "2026-06-20T22:46:37.991416+00:00",  <span style="color:#4A4A3A">// anchor — first real snapshot</span>
+  "prices": {
+    "NVDAB": 209.56,
+    "TSLAB": 400.53,
+    "CRCLB": 80.62,
+    "MUB":   1131.995,
+    "SNDKB": 2240.63
+  }
+}</div>
+    <p class="doc-p">
+      The <strong>first</strong> snapshot in the file is the anchor (<code>t0</code>).
+      All drift calculations are relative to this anchor.
+    </p>
+    <div class="limit-note">
+      <strong>Known limitation:</strong> The dataset window is bounded by the hackathon build
+      period (~14 hours). This is not a full weekend-to-Monday convergence series. The drift
+      trajectory and signal quality improve the longer the cron runs. Any evaluation must
+      account for this cold-start constraint.
+    </div>
+
+    <!-- §4 Drift Formula -->
+    <h2 class="doc-h2"><span class="section-num">§4</span>Drift Formula</h2>
+    <div class="formula-callout">
+      drift_t = (price_t − price_t0) / price_t0
+    </div>
+    <p class="doc-p">Where:</p>
+    <p class="doc-p">
+      <code>price_t0</code> = price of the token in the first snapshot (the anchor)<br>
+      <code>price_t</code> &nbsp;= price of the token in the most recent snapshot<br>
+      <code>drift_t</code> &nbsp;= signed fractional value; positive = price moved up from anchor
+    </p>
+    <p class="doc-p">
+      Drift is expressed as a percentage in all outputs. Basis-point representation
+      (<code>drift_bps = round(drift_pct × 10 000)</code>) is used for on-chain storage.
+    </p>
+
+    <!-- §5 Signal Thresholds -->
+    <h2 class="doc-h2"><span class="section-num">§5</span>Signal Thresholds</h2>
+    <div class="doc-table-wrap">
+      <table class="doc-table">
+        <thead><tr><th>Condition</th><th>Signal</th><th>Direction logic</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>|drift| &gt; 1.5%</td>
+            <td>LONG or SHORT</td>
+            <td>Direction is <strong>opposite</strong> to drift sign (reversion bet): drift up → SHORT; drift down → LONG</td>
+          </tr>
+          <tr>
+            <td>|drift| &lt; 0.3%</td>
+            <td>CONVERGED</td>
+            <td>Price has returned to anchor; exit or skip</td>
+          </tr>
+          <tr>
+            <td>0.3% ≤ |drift| ≤ 1.5%</td>
+            <td>FLAT</td>
+            <td>Insufficient edge; no position</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="doc-p">
+      Thresholds are hard-coded in <code>drift_engine.py</code> and must not be changed
+      without explicit sign-off.
+    </p>
+
+    <!-- §6 Confidence -->
+    <h2 class="doc-h2"><span class="section-num">§6</span>Confidence Scoring</h2>
+    <p class="doc-p">
+      Confidence is a 0–100 integer included in every signal output.
+    </p>
+    <div class="doc-table-wrap">
+      <table class="doc-table">
+        <thead><tr><th>Signal</th><th>Confidence calculation</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>LONG / SHORT</td>
+            <td>60 at threshold (1.5%), scales linearly to 85 at 3× threshold (4.5%), capped at 85</td>
+          </tr>
+          <tr>
+            <td>FLAT</td>
+            <td>Fixed 50 (no directional edge)</td>
+          </tr>
+          <tr>
+            <td>CONVERGED</td>
+            <td>Fixed 90 (strong mean-reversion completion evidence)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="doc-p">
+      This is not a statistical p-value — it is an ordinal confidence band for on-chain
+      logging and human-readable output. The registry contract stores it as an integer
+      0–100 in the <code>confidence</code> field of <code>logSignal</code>.
+    </p>
+
+    <!-- §7 Signal Output Format -->
+    <h2 class="doc-h2"><span class="section-num">§7</span>Signal Output Format</h2>
+    <p class="doc-p">
+      Every signal emitted by the system must include this reasoning block, verbatim:
+    </p>
+    <div class="doc-pre">[Strategy: BQuant — bStock Weekend Drift]
+[Token: &lt;TICKER&gt;]
+[Anchor (t0): &lt;price&gt; @ &lt;timestamp&gt;]
+[Current Price: &lt;price&gt; @ &lt;timestamp&gt;]
+[Drift: x.xx%]
+[Signal: LONG/SHORT/FLAT/CONVERGED]
+[Confidence: xx%]
+[Reasoning: &lt;one sentence&gt;]</div>
+    <p class="doc-p">
+      The <code>logId</code> emitted by <code>BQuantSignalRegistry.logSignal()</code> on BSC
+      testnet links the on-chain event to this off-chain block. The reasoning text is
+      intentionally kept off-chain to minimise gas and because the README/demo carries
+      the narrative; the chain proves <em>what</em> was logged.
+    </p>
+
+    <!-- §8 On-Chain Registry -->
+    <h2 class="doc-h2"><span class="section-num">§8</span>On-Chain Registry</h2>
+    <p class="doc-p">
+      Contract: <code>registry/BQuantSignalRegistry.sol</code><br>
+      Network: BSC Testnet (chain ID 97)<br>
+      Address: <code>0xFFCC472c47cf0a8168545a8318832950f7C6F453</code><br>
+      Deploy tx: <a href="https://testnet.bscscan.com/tx/0x29790132a2390675657dfe509a9823975d7286b9bb3d9f6417c88c10226e7203" target="_blank" rel="noopener" style="color:var(--accent)">0x2979…7203 ↗</a>
+    </p>
+    <p class="doc-p">
+      Entry point: <code>logSignal(token, signal, driftBps, confidence)</code><br>
+      Event emitted: <code>SignalLogged(logId, token, signal, driftBps, confidence, timestamp)</code>
+    </p>
+    <p class="doc-p">
+      <code>driftBps</code> is the drift expressed in basis points (integer),
+      e.g. <code>drift_pct × 10 000</code>. On-chain signal enum: FLAT=0, LONG=1, SHORT=2.
+      CONVERGED maps to FLAT for gas efficiency.
+    </p>
+    <p class="doc-p">
+      Agent identity registered via bnbagent ERC-8004 SDK:
+      agentId = 1470,
+      registration tx: <a href="https://testnet.bscscan.com/tx/0x7d2485eaaef6d3e11426b384a608802b63d1dd18e08f7978c3d860dd2cb7c16f" target="_blank" rel="noopener" style="color:var(--accent)">0x7d24…c16f ↗</a>.
+    </p>
+
+    <!-- §9 Known Limitations -->
+    <h2 class="doc-h2"><span class="section-num">§9</span>Known Limitations</h2>
+    <div class="doc-table-wrap">
+      <table class="doc-table">
+        <thead><tr><th>Limitation</th><th>Implication</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>No historical OHLCV (Path B)</td>
+            <td>Anchor is set at first runtime snapshot, not market close Friday. Weekend-open gap is partially captured, not precisely measured.</td>
+          </tr>
+          <tr>
+            <td>14-hour dataset window</td>
+            <td>Signal quality improves over time; early signals have fewer supporting snapshots.</td>
+          </tr>
+          <tr>
+            <td>Single anchor point</td>
+            <td>No rolling-window baseline; a mis-timed first snapshot becomes the permanent anchor.</td>
+          </tr>
+          <tr>
+            <td>CMC Skill Hub latency / gaps</td>
+            <td>If a token is missing from a CMC response, that snapshot is partial. Missing tokens are flagged in output, not interpolated.</td>
+          </tr>
+          <tr>
+            <td>No live execution</td>
+            <td>Track 2 requires a signal, not a trade. The system does not open positions, manage risk, or interact with a DEX.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- §10 Out of Scope -->
+    <h2 class="doc-h2"><span class="section-num">§10</span>Out of Scope</h2>
+    <p class="doc-p">
+      ADX / ATR / RSI regime classification (prior pivot, abandoned) ·
+      Autonomous wallet / custody (TWAK Mode B is read-only; no Mode A) ·
+      Published PyPI package (sdk/ is a local importable module, not versioned) ·
+      Live NYSE/Nasdaq price feed (reference anchor is the last known price embedded in
+      the bStock oracle, not a direct market data subscription).
+    </p>
+
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<div class="doc-footer">
+  <div class="doc-footer-inner">
+    <span style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.08em;color:#4A4A3A;text-transform:uppercase">
+      BQuant · ERC-8004 agentId 1470 · BSC Testnet
+    </span>
+    <div style="display:flex;gap:1.5rem;flex-wrap:wrap">
+      <a href="index.html">← Back to BQuant</a>
+      <a href="https://github.com/Benita2001/Bquant" target="_blank" rel="noopener">GitHub ↗</a>
+      <a href="https://testnet.bscscan.com/address/0xFFCC472c47cf0a8168545a8318832950f7C6F453" target="_blank" rel="noopener">Contract ↗</a>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

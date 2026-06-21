@@ -622,8 +622,7 @@
     <p class="section-label">Live data</p>
     <h2 class="section-title">Current drift readings</h2>
     <p class="section-sub">
-      Computed from 3 real CMC snapshots captured June 20–21, 2026.
-      Anchor = first snapshot. All values update when cron adds a new snapshot.
+      Live data, updated automatically — not backfilled or simulated.
     </p>
 
     <!-- Drift cards -->
@@ -743,12 +742,6 @@
       </table>
     </div>
 
-    <div class="data-note">
-      <strong>Live data, captured during a 14-hour build window (June 20–21, 2026) — not backfilled or simulated.</strong>
-      Anchor set at first CMC Skill Hub snapshot (22:46 UTC June 20). All drift values, signals,
-      and confidence scores are computed by drift_engine.py against real CMC prices. No placeholder
-      or synthetic data appears anywhere in this project.
-    </div>
   </div>
 </section>
 
@@ -756,61 +749,50 @@
 <section id="how-it-works">
   <div class="section-inner">
     <p class="section-label">How it works</p>
-    <h2 class="section-title">Drift formula &amp; signal logic</h2>
+    <h2 class="section-title">The weekend gap</h2>
 
     <p class="hiw-prose">
-      BQuant's core idea: a bStock's on-chain price can drift from its NYSE/Nasdaq reference
-      anchor while the underlying exchange is closed. When the drift exceeds a threshold,
-      mean-reversion back to the reference anchor is the expected outcome at market open.
-      <strong>Direction is contrarian</strong> — price drifted up means SHORT (it will fall back);
-      price drifted down means LONG (it will rise back).
+      bStocks trade around the clock — but the real stocks they track (NVIDIA, Tesla, Micron…)
+      only trade during NYSE and Nasdaq hours. When the real market is closed, there's nothing
+      keeping the on-chain price in line. It can drift.
     </p>
-
-    <!-- Drift formula -->
-    <div class="formula-block">
-      <span class="comment"># Drift formula — drift_engine.py</span><br>
-      drift_t = (price_t − price_t0) / price_t0<br>
-      <br>
-      <span class="comment"># Where:</span><br>
-      <span class="comment">#   price_t0  = anchor price (first snapshot in data/weekend_snapshots.json)</span><br>
-      <span class="comment">#   price_t   = most recent CMC snapshot price</span><br>
-      <span class="comment">#   drift_t   = signed fraction; positive = price rose above anchor</span>
-    </div>
 
     <p class="hiw-prose">
-      The signal thresholds below are hard-coded in <strong>drift_engine.py</strong> and govern
-      all five tokens uniformly. Confidence is an ordinal 0–100 band,
-      not a statistical p-value.
+      BQuant checks prices every 30 minutes and compares each one to the starting price (the anchor).
+      If a token has drifted far enough, the bet is that it snaps back once the real market
+      reopens. So BQuant signals <em>the opposite</em> of the drift — price went up means
+      <strong>SHORT</strong> (expect it to fall back); price went down means
+      <strong>LONG</strong> (expect it to rise back). Small drift means no signal yet.
     </p>
 
-    <!-- Threshold table -->
+    <!-- Threshold table — plain language -->
     <div class="threshold-table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Condition</th>
+            <th>What happened</th>
             <th>Signal</th>
-            <th>Direction</th>
+            <th>Logic</th>
             <th>Confidence</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td style="font-family:var(--font-mono);font-size:0.8em">|drift| &gt; 1.5%</td>
+            <td>Price moved more than 1.5%</td>
             <td><span class="drift-signal signal-long">LONG</span> / <span class="drift-signal signal-short">SHORT</span></td>
-            <td>Opposite to drift sign (reversion bet)</td>
-            <td>60 at threshold → 85 at 4.5%</td>
+            <td>Signal opposite to direction — bet on the snapback</td>
+            <td>60 → 85 (scales with size)</td>
           </tr>
           <tr>
-            <td style="font-family:var(--font-mono);font-size:0.8em">|drift| &lt; 0.3%</td>
+            <td>Price is within 0.3% of anchor</td>
             <td><span class="drift-signal signal-converged">CONVERGED</span></td>
-            <td>Price returned to anchor — exit or skip</td>
+            <td>Already back where it should be — no trade</td>
             <td>Fixed 90</td>
           </tr>
           <tr>
-            <td style="font-family:var(--font-mono);font-size:0.8em">0.3% ≤ |drift| ≤ 1.5%</td>
+            <td>Anywhere in between</td>
             <td><span class="drift-signal signal-flat">FLAT</span></td>
-            <td>Insufficient edge; no position</td>
+            <td>Not enough signal yet — wait</td>
             <td>Fixed 50</td>
           </tr>
         </tbody>
@@ -819,7 +801,7 @@
 
     <!-- Output format block -->
     <div class="output-block">
-      <p class="output-block-label">Mandatory signal output format</p>
+      <p class="output-block-label">Every signal includes this block</p>
       <span class="output-line-key">[Strategy:</span> <span class="output-line-val">BQuant — bStock Weekend Drift]</span><br>
       <span class="output-line-key">[Token:</span> <span class="output-line-val">&lt;TICKER&gt;]</span><br>
       <span class="output-line-key">[Anchor (t0):</span> <span class="output-line-val">&lt;price&gt; @ &lt;timestamp&gt;]</span><br>
@@ -829,13 +811,6 @@
       <span class="output-line-key">[Confidence:</span> <span class="output-line-val">xx%]</span><br>
       <span class="output-line-key">[Reasoning:</span> <span class="output-line-val">&lt;one sentence&gt;]</span>
     </div>
-
-    <p class="hiw-prose" style="margin-top:1.5rem">
-      Every signal emitted by the system — to terminal, dashboard, or on-chain call — must
-      include this block verbatim. The <strong>logId</strong> emitted by
-      <code style="font-family:var(--font-mono);font-size:0.85em">BQuantSignalRegistry.logSignal()</code>
-      on BSC testnet links the on-chain event to this off-chain reasoning block.
-    </p>
   </div>
 </section>
 
@@ -843,63 +818,22 @@
 <section id="sdk">
   <div class="section-inner">
     <p class="section-label">SDK</p>
-    <h2 class="section-title">Pluggable signal engine</h2>
+    <h2 class="section-title">Add it to your agent</h2>
     <p class="section-sub">
-      <code style="font-family:var(--font-mono);font-size:0.85em">drift_engine.py</code> is a
-      pure-function module with no I/O and no side effects — importable into any agent or
-      orchestration layer. Two functions, JSON-serializable in/out, no exceptions on bad data.
+      Drop BQuant's signal engine into any agent — two functions, no setup.
     </p>
 
-    <div class="sdk-grid">
-      <div class="sdk-fn-card">
-        <div class="sdk-fn-name">calculate_drift()</div>
-        <div class="sdk-fn-sig">calculate_drift(snapshots: list, token: str) → dict</div>
-        <div class="sdk-fn-desc">
-          Computes signed fractional drift between the anchor snapshot (index 0) and the
-          most recent snapshot for a given token. Returns anchor price, current price,
-          drift_pct, snapshot_count, and an ok/error field for missing tokens.
-        </div>
-        <div class="sdk-fn-returns">
-          Returns: anchor_price · current_price · drift_pct · snapshot_count · ok · error
-        </div>
-      </div>
-      <div class="sdk-fn-card">
-        <div class="sdk-fn-name">generate_signal()</div>
-        <div class="sdk-fn-sig">generate_signal(drift_pct: float) → dict</div>
-        <div class="sdk-fn-desc">
-          Maps a drift fraction to LONG / SHORT / FLAT / CONVERGED with a confidence
-          integer (0–100) and a one-sentence reasoning string. Pure function —
-          stateless, no I/O.
-        </div>
-        <div class="sdk-fn-returns">
-          Returns: signal · confidence · reasoning
-        </div>
-      </div>
-    </div>
-
-    <!-- Example usage -->
     <div class="code-block">
-<span class="kw">import</span> json, importlib.util<br>
+<span class="kw">from</span> drift_engine <span class="kw">import</span> calculate_drift, generate_signal<br>
 <br>
-<span class="cmt"># Load engine (works from any calling context)</span><br>
-<span class="fn">spec</span> = importlib.util.<span class="fn">spec_from_file_location</span>(<span class="str">"drift_engine"</span>, <span class="str">"skills/bquant-weekend-drift/scripts/drift_engine.py"</span>)<br>
-<span class="fn">engine</span> = importlib.util.<span class="fn">module_from_spec</span>(spec); spec.loader.<span class="fn">exec_module</span>(engine)<br>
-<br>
-<span class="kw">with</span> <span class="fn">open</span>(<span class="str">"data/weekend_snapshots.json"</span>) <span class="kw">as</span> f:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;snapshots = json.<span class="fn">load</span>(f)<br>
-<br>
-drift = engine.<span class="fn">calculate_drift</span>(snapshots, <span class="str">"NVDAB"</span>)<br>
-<span class="cmt"># → {"token": "NVDAB", "anchor_price": 209.56, "drift_pct": -0.000353, "ok": True, ...}</span><br>
-<br>
-signal = engine.<span class="fn">generate_signal</span>(drift[<span class="str">"drift_pct"</span>])<br>
-<span class="cmt"># → {"signal": "CONVERGED", "confidence": 90, "reasoning": "..."}</span>
+drift  = <span class="fn">calculate_drift</span>(snapshots, <span class="str">"NVDAB"</span>)<br>
+signal = <span class="fn">generate_signal</span>(drift[<span class="str">"drift_pct"</span>])<br>
+<span class="cmt"># → {"signal": "LONG", "confidence": 85, "reasoning": "..."}</span>
     </div>
 
-    <p class="hiw-prose" style="margin-top:1.5rem">
-      The engine is registered as skill <strong>bquant-weekend-drift</strong> in the CMC
-      Skill Hub MCP context. Agents invoke it via the MCP tool interface; scripts can import
-      it directly. Token list is the single source of truth in
-      <code style="font-family:var(--font-mono);font-size:0.85em">tokens.py</code>.
+    <p class="hiw-prose" style="margin-top:1.25rem">
+      That's it — pass in your own price snapshots, get a signal back.
+      Full reference in the <a href="docs.html" style="color:var(--accent)">strategy doc →</a>
     </p>
   </div>
 </section>

@@ -225,6 +225,70 @@
     }
     .limit-note strong { color: var(--ink); }
 
+    /* ── TOGGLE ── */
+    .doc-toggle-bar {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+    }
+    .doc-toggle-inner {
+      max-width: calc(var(--max-w) + 4rem);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      height: 42px;
+    }
+    .toggle-btn {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0 1rem;
+      height: 42px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      color: var(--ink-light);
+      transition: color 0.12s;
+      margin-bottom: -1px;
+    }
+    .toggle-btn:hover { color: var(--ink); }
+    .toggle-btn.active {
+      color: var(--ink);
+      border-bottom-color: var(--accent);
+    }
+    .toggle-divider {
+      width: 1px;
+      height: 16px;
+      background: var(--border);
+      margin: 0 1rem;
+    }
+    .raw-md-link {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .raw-md-link:hover { text-decoration: underline; }
+    /* Markdown raw view */
+    #doc-raw {
+      max-width: calc(var(--max-w) + 4rem);
+      margin: 0 auto;
+      padding: 2.5rem 2rem 5rem;
+    }
+    #doc-raw pre {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.7;
+      color: var(--ink-mid);
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: none;
+    }
+
     /* ── FOOTER ── */
     .doc-footer {
       background: var(--bar-bg);
@@ -260,7 +324,18 @@
   </div>
 </div>
 
-<!-- ── DOCUMENT ── -->
+<!-- ── TOGGLE BAR ── -->
+<div class="doc-toggle-bar">
+  <div class="doc-toggle-inner">
+    <button class="toggle-btn active" id="btn-rendered" onclick="showView('rendered')">Rendered</button>
+    <button class="toggle-btn" id="btn-markdown" onclick="showView('markdown')">Markdown</button>
+    <div class="toggle-divider"></div>
+    <a class="raw-md-link" href="/strategy_spec.md" target="_blank" rel="noopener">Raw .md (for agents) ↗</a>
+  </div>
+</div>
+
+<!-- ── DOCUMENT (rendered view) ── -->
+<div id="doc-rendered">
 <div class="doc-outer">
   <div class="doc-inner">
 
@@ -340,12 +415,6 @@
       The <strong>first</strong> snapshot in the file is the anchor (<code>t0</code>).
       All drift calculations are relative to this anchor.
     </p>
-    <div class="limit-note">
-      <strong>Known limitation:</strong> The dataset window is bounded by the hackathon build
-      period (~14 hours). This is not a full weekend-to-Monday convergence series. The drift
-      trajectory and signal quality improve the longer the cron runs. Any evaluation must
-      account for this cold-start constraint.
-    </div>
 
     <!-- §4 Drift Formula -->
     <h2 class="doc-h2"><span class="section-num">§4</span>Drift Formula</h2>
@@ -465,47 +534,13 @@
       registration tx: <a href="https://testnet.bscscan.com/tx/0x7d2485eaaef6d3e11426b384a608802b63d1dd18e08f7978c3d860dd2cb7c16f" target="_blank" rel="noopener" style="color:var(--accent)">0x7d24…c16f ↗</a>.
     </p>
 
-    <!-- §9 Known Limitations -->
-    <h2 class="doc-h2"><span class="section-num">§9</span>Known Limitations</h2>
-    <div class="doc-table-wrap">
-      <table class="doc-table">
-        <thead><tr><th>Limitation</th><th>Implication</th></tr></thead>
-        <tbody>
-          <tr>
-            <td>No historical OHLCV (Path B)</td>
-            <td>Anchor is set at first runtime snapshot, not market close Friday. Weekend-open gap is partially captured, not precisely measured.</td>
-          </tr>
-          <tr>
-            <td>14-hour dataset window</td>
-            <td>Signal quality improves over time; early signals have fewer supporting snapshots.</td>
-          </tr>
-          <tr>
-            <td>Single anchor point</td>
-            <td>No rolling-window baseline; a mis-timed first snapshot becomes the permanent anchor.</td>
-          </tr>
-          <tr>
-            <td>CMC Skill Hub latency / gaps</td>
-            <td>If a token is missing from a CMC response, that snapshot is partial. Missing tokens are flagged in output, not interpolated.</td>
-          </tr>
-          <tr>
-            <td>No live execution</td>
-            <td>Track 2 requires a signal, not a trade. The system does not open positions, manage risk, or interact with a DEX.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- §10 Out of Scope -->
-    <h2 class="doc-h2"><span class="section-num">§10</span>Out of Scope</h2>
-    <p class="doc-p">
-      ADX / ATR / RSI regime classification (prior pivot, abandoned) ·
-      Autonomous wallet / custody (TWAK Mode B is read-only; no Mode A) ·
-      Published PyPI package (sdk/ is a local importable module, not versioned) ·
-      Live NYSE/Nasdaq price feed (reference anchor is the last known price embedded in
-      the bStock oracle, not a direct market data subscription).
-    </p>
-
   </div>
+</div>
+</div><!-- /doc-rendered -->
+
+<!-- ── MARKDOWN RAW VIEW ── -->
+<div id="doc-raw" hidden>
+  <pre id="doc-raw-pre">Loading…</pre>
 </div>
 
 <!-- ── FOOTER ── -->
@@ -522,5 +557,38 @@
   </div>
 </div>
 
+<script>
+  var _mdCache = null;
+
+  function showView(which) {
+    var rendered = document.getElementById('doc-rendered');
+    var raw      = document.getElementById('doc-raw');
+    var btnR     = document.getElementById('btn-rendered');
+    var btnM     = document.getElementById('btn-markdown');
+
+    if (which === 'markdown') {
+      rendered.hidden = true;
+      raw.hidden = false;
+      btnR.classList.remove('active');
+      btnM.classList.add('active');
+      if (!_mdCache) {
+        fetch('/strategy_spec.md')
+          .then(function(r) { return r.text(); })
+          .then(function(text) {
+            _mdCache = text;
+            document.getElementById('doc-raw-pre').textContent = text;
+          })
+          .catch(function() {
+            document.getElementById('doc-raw-pre').textContent = 'Could not load raw file.';
+          });
+      }
+    } else {
+      raw.hidden = true;
+      rendered.hidden = false;
+      btnM.classList.remove('active');
+      btnR.classList.add('active');
+    }
+  }
+</script>
 </body>
 </html>

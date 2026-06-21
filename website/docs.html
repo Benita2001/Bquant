@@ -339,7 +339,6 @@
 <div class="doc-outer">
   <div class="doc-inner">
 
-    <p class="doc-eyebrow">BNB Hack Q2 2026 · Track 2 — Strategy Skills</p>
     <h1 class="doc-title">BQuant Weekend Drift<br>Strategy Specification</h1>
     <div class="doc-meta-row">
       <div class="doc-meta-item"><span class="doc-meta-key">Version </span><span class="doc-meta-val">1.0</span></div>
@@ -385,17 +384,10 @@
       Token contracts are on BNB Chain (BEP-20). Prices are sourced from CMC Skill Hub
       (MCP tool) for agent-context invocations, and from the CMC REST API
       (<code>/v1/cryptocurrency/quotes/latest</code>) for VPS cron automation.
-      SPCXB (SpaceX) is excluded pending completion of the Nasdaq IPO and a live
-      Binance listing date.
     </p>
 
     <!-- §3 Data Method -->
-    <h2 class="doc-h2"><span class="section-num">§3</span>Data Method — Path B (Self-Generated History)</h2>
-    <p class="doc-p">
-      Historical OHLCV for bStock tokens is <strong>not available</strong> on the current CMC
-      plan (REST historical endpoint returns 403; Skill Hub has no time-anchored price query).
-      Therefore:
-    </p>
+    <h2 class="doc-h2"><span class="section-num">§3</span>Data Method</h2>
     <p class="doc-p">
       The agent snapshots current prices via CMC Skill Hub on a recurring basis (every 30–60
       minutes, cron-driven on Contabo VPS). Each snapshot is appended to

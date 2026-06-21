@@ -36,10 +36,7 @@ Token contracts are on BNB Chain. Prices are sourced from CMC Skill Hub (MCP too
 
 ---
 
-## 3. Data Method — Path B (Self-Generated History)
-
-Historical OHLCV for bStock tokens is **not available** on the current CMC plan (REST
-historical endpoint returns 403; Skill Hub has no time-anchored price query). Therefore:
+## 3. Data Method
 
 - The agent snapshots current prices via CMC Skill Hub on a recurring basis (every 30–60
   minutes, cron-driven on Contabo VPS).
@@ -141,24 +138,3 @@ Event emitted: `SignalLogged(logId, token, signal, driftBps, confidence, timesta
 `driftBps` is the drift expressed in **basis points** (integer), e.g. `drift_pct * 10_000`.
 Reasoning text is not stored on-chain.
 
----
-
-## 9. Known Limitations
-
-| Limitation | Implication |
-|------------|-------------|
-| No historical OHLCV (Path B data method) | Anchor is set at first runtime snapshot, not market close Friday. Weekend-open gap is partially captured, not precisely measured. |
-| 14-hour dataset window | Signal quality improves over time; early signals have fewer supporting snapshots. |
-| Single anchor point | No rolling-window baseline; a mis-timed first snapshot becomes the permanent anchor. |
-| CMC Skill Hub latency / gaps | If a token is missing from a CMC response, that snapshot is partial. Missing tokens are flagged in output, not interpolated. |
-| No live execution | Track 2 requires a signal, not a trade. The system does not open positions, manage risk, or interact with a DEX. |
-
----
-
-## 10. Out of Scope
-
-- ADX / ATR / RSI regime classification (prior pivot, abandoned)
-- Autonomous wallet / custody (TWAK Mode B is read-only; no Mode A)
-- Published PyPI package (sdk/ is a local importable module, not versioned)
-- Live NYSE/Nasdaq price feed (reference anchor is the last known price embedded in the
-  bStock oracle, not a direct market data subscription)
